@@ -1,0 +1,98 @@
+---
+title: "Supermarket Price Wars"
+subtitle: 
+output: html_document
+---
+```{r setup, message=FALSE, echo=FALSE}
+require("knitr")
+opts_knit$set(root.dir = "/Users/dprasadg/Documents/RMIT/Semester 1/Introduction\ to\ statistics/Assignments")
+```
+
+## Executive Statement
+
+This report contains a statistical analysis of the prices between Coles and Woolworths, two of Australia's leading supermarket chains. This study is to assess which supermarket chain is cheaper than the other based on the mean of the prices of products available at both the supermarkets. 
+The data required for the study was collected online from the respective websites of each supermarket. The dataset contains three attributes namely product name, price, and company. The dataset was then split by grouping the observations according to their respective supermarkets.
+Summary statistics have been presented as part of descriptive statistics and a two-sample t-test for independent variables was carried out for statistical inference. 
+In descriptive statistics, mean, median, mode,1st quartile, and other features have been explicated and box plot is used to visualize the same. The normality of the data is visualized using q-q plots and we could see that the majority of the observations lay inside the confidence interval. However, we considered CLT to assume normality of the distribution as the sample size was 400(n>30).
+The Levene's test was applied to the sample to check the homogeneity of the variances, and the resulting p-value was 0.4064 which is greater than 0.05, so we are safe to assume that variances are equal. Following this, the two sample t-test was carried out and the resulting p-value (0.60) was found to be greater than 0.05 meaning that we failed to reject the null hypothesis, thereby getting to the conclusion that there is no statistically significant difference in the means of the prices of both supermarkets to suggest one is cheaper than the other and requires more evidence to prove otherwise.
+
+## Load Packages and Data
+
+```{r ,warning=FALSE}
+#Importing Libraries 
+library(rmarkdown)
+library(readxl) 
+library(magrittr)
+library(dplyr)
+library(car)
+library(kableExtra)
+
+#Reading Excel File 
+data <- read_excel("price_data.xlsx")
+View(data)
+
+#factoring the levels with labels
+data$Company <- factor(data$Company, levels= c("Coles","Woolys"), labels=c("c","w"))
+```
+
+## Summary Statistics
+
+```{r}
+a <- data %>% group_by(Company) %>% 
+  summarise(Observations = n()
+            ,Mean = mean(Price)
+            ,Median= median(Price)
+            ,'Std. Deviation' = sd(Price)
+            ,'1st Quantile' = quantile(Price, .25)
+            ,'3rd Quartile' = quantile(Price, .75)
+            ,'Inter Quartile' = quantile(Price, .75) - quantile(Price, .25)
+            ,Minimum = min(Price)
+            ,Maximum = max(Price)
+            ,Missing = sum(is.na(Price)))  
+kable(a, caption = "Descriptive statistics on prices based on companies") %>%
+  kable_styling(bootstrap_options = c("hover", "condensed"))
+
+data %>% boxplot(Price ~ Company, data = ., ylab = "Price",xlab = "Companies", main = "Box plot for comparision of prices between coles and woolworths")
+```
+
+
+## Hypothesis Test
+
+```{r}
+#Sample
+set.seed(1)
+samp <- sample_n(data,size=400)
+samp
+
+#Q-Q plot for Coles
+samp_coles <- samp %>% filter(Company == "c")
+samp_coles$Price %>% qqPlot(dist="norm", main = "Q-Q plot for Coles", ylab = "Price")
+
+#Q-Q plot for Woolworths
+samp_w <- samp %>% filter(Company == "w")
+samp_w$Price %>% qqPlot(dist="norm", main = "Q-Q plot for Woolworths", , ylab = "Price")
+
+#Levene's Test to check homogeneity of variance
+leveneTest(Price ~ Company, data = samp)
+
+#Indepentent two sample t-test for independent variables with equal variance
+t.test(
+  Price ~ Company,
+  data = samp,
+  var.equal = TRUE,
+  alternative = "two.sided"
+)
+```
+
+## Interpretation
+
+An Independent two-sample t-test was used to test for a significant difference between the mean prices of Coles and Woolworths. While the prices for Woolworths exhibited evidence of non-normality upon inspection of the normal Q-Q plot, the central limit theorem ensured that the t-test could be applied due to the large sample size in each group. The Levenes test of homogeneity of variance indicated that equal variance could be assumed. The results of the two-sample t-test assuming equal variance found the difference between the mean prices of Coles and Woolworths are not statistically significant, t(df=398)=-0.4113, p=0.68, 95% CI for the difference in means [-0.51  0.33]. The results of the investigation suggest that to find which of the two supermarkets, Woolworths or Coles is cheaper, requires more evidence to deduce the statistically significant results.
+
+
+## Discussion 
+
+After completing this analysis, we came to the conclusion that there is no statistically significant difference in the mean of both the supermarkets to suggest which is cheaper than the other.
+One of the strengths of this anlaysis was that we made sure to include a diverse range products in the  dataset so that the data is not baised to a particular category of products.We also introduced an upper price limit of 10$ so that there are no huge variations between the prices of the products in the dataset.
+As far as the weaknesses are concerned, we feel that the sample size could have been bigger thereby increasing the possibility of the null hypothesis being rejected due to the decrease in the p-value. Another weakness was that there were a fair number of outliers visible in the Q-Q plots of both supermarkets.
+
+
